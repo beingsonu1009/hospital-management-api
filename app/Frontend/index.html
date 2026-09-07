@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System</title>
+
+    <!-- Main CSS file: saari styling isi file se control hogi -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- =========================================================
+         LOGIN SCREEN
+         Backend ke /auth/login endpoint ke saath connect hoga.
+         ========================================================= -->
+    <section id="loginPage" class="login-page">
+        <div class="login-card">
+            <div class="brand">
+                <div class="brand-icon">+</div>
+                <div>
+                    <h1>Hospital Management</h1>
+                    <p>Management System</p>
+                </div>
+            </div>
+
+            <h2>Welcome Back</h2>
+            <p class="muted">Login to access the hospital dashboard.</p>
+
+            <form id="loginForm">
+                <label for="username">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    placeholder="Enter username"
+                    required
+                >
+
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    placeholder="Enter password"
+                    required
+                >
+
+                <button type="submit" class="btn primary full-width">
+                    Login
+                </button>
+
+                <p id="loginMessage" class="message"></p>
+            </form>
+        </div>
+    </section>
+
+
+    <!-- =========================================================
+         MAIN APPLICATION
+         Login successful hone ke baad ye section show hoga.
+         ========================================================= -->
+    <section id="appPage" class="app-page hidden">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon small">+</div>
+                <div>
+                    <strong>Hospital</strong>
+                    <span>Management</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="dashboard">
+                    <span>▦</span> Dashboard
+                </button>
+
+                <button class="nav-item" data-section="patients">
+                    <span>♙</span> Patients
+                </button>
+
+                <button class="nav-item" data-section="doctors">
+                    <span>⚕</span> Doctors
+                </button>
+
+                <button class="nav-item" data-section="appointments">
+                    <span>◷</span> Appointments
+                </button>
+            </nav>
+
+            <button id="logoutBtn" class="logout-btn">
+                Logout
+            </button>
+        </aside>
+
+
+        <!-- Main content -->
+        <main class="main-content">
+
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">Hospital Management System</p>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+
+                <div class="user-info">
+                    <div class="avatar">U</div>
+                    <div>
+                        <strong id="loggedInUser">User</strong>
+                        <span>Administrator</span>
+                    </div>
+                </div>
+            </header>
+
+
+            <!-- =====================================================
+                 DASHBOARD
+                 ===================================================== -->
+            <section id="dashboardSection" class="page-section active-section">
+
+                <div class="welcome-banner">
+                    <div>
+                        <p class="eyebrow">Overview</p>
+                        <h2>Hospital Dashboard</h2>
+                        <p>Manage patients, doctors and appointments from one place.</p>
+                    </div>
+
+                    <button class="btn light" data-open-section="patients">
+                        View Patients
+                    </button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">P</div>
+                        <div>
+                            <span>Total Patients</span>
+                            <strong id="patientCount">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">D</div>
+                        <div>
+                            <span>Total Doctors</span>
+                            <strong id="doctorCount">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">A</div>
+                        <div>
+                            <span>Appointments</span>
+                            <strong id="appointmentCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Quick Overview</h3>
+                            <p class="muted">Current data fetched from FastAPI.</p>
+                        </div>
+
+                        <button id="refreshDashboard" class="btn secondary">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div id="dashboardStatus" class="status-box">
+                        Loading hospital data...
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =====================================================
+                 PATIENTS
+                 ===================================================== -->
+            <section id="patientsSection" class="page-section">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Patient Management</p>
+                        <h2>Patients</h2>
+                        <p class="muted">Patients database se load ho rahe hain.</p>
+                    </div>
+
+                    <button id="showPatientFormBtn" class="btn primary">
+                        + Add Patient
+                    </button>
+                </div>
+
+                <!-- Add patient form -->
+                <div id="patientFormCard" class="content-card hidden">
+                    <div class="card-header">
+                        <div>
+                            <h3>Add New Patient</h3>
+                            <p class="muted">Patient ko FastAPI POST endpoint ke through save karenge.</p>
+                        </div>
+                    </div>
+
+                    <form id="patientForm" class="form-grid">
+
+                        <div>
+                            <label for="patientName">Name</label>
+                            <input id="patientName" type="text" minlength="3" required>
+                        </div>
+
+                        <div>
+                            <label for="patientAge">Age</label>
+                            <input id="patientAge" type="number" min="1" max="120" required>
+                        </div>
+
+                        <div>
+                            <label for="patientGender">Gender</label>
+                            <select id="patientGender" required>
+                                <option value="">Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="patientDisease">Disease</label>
+                            <input id="patientDisease" type="text" minlength="3" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn primary">Save Patient</button>
+                            <button type="button" id="cancelPatientBtn" class="btn secondary">
+                                Cancel
+                            </button>
+                        </div>
+
+                        <p id="patientFormMessage" class="message form-message"></p>
+                    </form>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Patient List</h3>
+                            <p class="muted">GET /patients</p>
+                        </div>
+
+                        <button id="refreshPatients" class="btn secondary">Refresh</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Age</th>
+                                    <th>Gender</th>
+                                    <th>Disease</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="patientsTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-state">Loading patients...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =====================================================
+                 DOCTORS
+                 ===================================================== -->
+            <section id="doctorsSection" class="page-section">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Doctor Management</p>
+                        <h2>Doctors</h2>
+                        <p class="muted">Registered doctors ki list.</p>
+                    </div>
+
+                    <button id="refreshDoctors" class="btn secondary">Refresh</button>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Doctor List</h3>
+                            <p class="muted">GET /doctors</p>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Specialisation</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="doctorsTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-state">Loading doctors...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =====================================================
+                 APPOINTMENTS
+                 ===================================================== -->
+            <section id="appointmentsSection" class="page-section">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Appointment Management</p>
+                        <h2>Appointments</h2>
+                        <p class="muted">Patient aur doctor ke appointments.</p>
+                    </div>
+
+                    <button id="refreshAppointments" class="btn secondary">Refresh</button>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Appointment List</h3>
+                            <p class="muted">GET /appointments/</p>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Patient ID</th>
+                                    <th>Doctor ID</th>
+                                    <th>Date & Time</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="appointmentsTableBody">
+                                <tr>
+                                    <td colspan="6" class="empty-state">Loading appointments...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </section>
+
+
+    <!-- JavaScript ko body ke end mein load kar rahe hain
+         taaki HTML elements pehle load ho jaayen. -->
+    <script src="js/app.js"></script>
+
+</body>
+</html>

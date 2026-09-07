@@ -1,0 +1,58 @@
+import asyncio
+from sqlalchemy import select
+from app.db.session import AsyncSessionLocal
+from app.models.patient import Patient
+
+
+# 1. READ ALL PATIENTS
+async def get_all_patients():
+    async with AsyncSessionLocal() as session:
+        # Step A: Query banayi (SELECT * FROM patients)
+        statement = select(Patient)
+
+        # Step B: DB par query execute ki
+        result = await session.execute(statement)
+
+        # Step C: Model objects ko unwrap kiya
+        patients = result.scalars().all()
+
+        print(f"Total Patients Found: {len(patients)}")
+        for p in patients:
+            print(f"- ID: {p.id} | Name: {p.name} | Disease: {p.disease}")
+
+        return patients
+
+
+# 2. READ PATIENT BY ID
+async def get_patient_by_id(patient_id: int):
+    async with AsyncSessionLocal() as session:
+        # Step A: Filter ke sath query banayi (SELECT * FROM patients WHERE id = :patient_id)
+        statement = select(Patient).where(Patient.id == patient_id)
+
+        # Step B: Execute query
+        result = await session.execute(statement)
+
+        # Step C: Exactly 1 record ya None fetch kiya
+        patient = result.scalar_one_or_none()
+
+        if patient is None:
+            print(f"Patient with ID {patient_id} NOT found!")
+        else:
+            print(f"Patient Found: {patient.name} (Age: {patient.age})")
+
+        return patient
+
+
+async def main():
+    print("--- Fetching All Patients ---")
+    await get_all_patients()
+
+    print("\n--- Fetching Patient by ID = 1 ---")
+    await get_patient_by_id(1)
+
+    print("\n--- Fetching Non-existent Patient by ID = 999 ---")
+    await get_patient_by_id(999)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
