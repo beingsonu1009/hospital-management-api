@@ -1,24 +1,24 @@
-// =========================================================
+
 // HOSPITAL MANAGEMENT FRONTEND
 // Saara frontend logic ek hi JS file mein rakha gaya hai.
 // HTML = structure
 // CSS  = design
 // JS   = API calls + interaction + page logic
-// =========================================================
 
 
-// =========================================================
+
+
 // API CONFIG
-// =========================================================
+
 
 // FastAPI backend ka base URL.
 // Agar backend ka address/port change ho to sirf yahan change karna hai.
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 
-// =========================================================
+
 // DOM ELEMENTS
-// =========================================================
+
 
 // HTML ke important elements ko variables mein store kar rahe hain.
 // Isse baar-baar document.getElementById() likhne ki zarurat nahi padegi.
@@ -45,9 +45,9 @@ const patientForm = document.getElementById("patientForm");
 const patientFormMessage = document.getElementById("patientFormMessage");
 
 
-// =========================================================
+
 // AUTHENTICATION HELPERS
-// =========================================================
+
 
 // Login ke baad JWT token browser ke localStorage mein save karte hain.
 // localStorage page refresh ke baad bhi token ko temporarily preserve karta hai.
@@ -85,9 +85,9 @@ function logout() {
 }
 
 
-// =========================================================
+
 // API REQUEST HELPER
-// =========================================================
+
 
 // Ye common helper function hai.
 // Iske through GET/POST/PUT/DELETE requests bhejna easy ho jata hai.
@@ -139,10 +139,7 @@ async function apiRequest(endpoint, options = {}) {
     return data;
 }
 
-
-// =========================================================
 // LOGIN
-// =========================================================
 
 // Login form submit hone par ye function chalega.
 
@@ -192,9 +189,8 @@ loginForm.addEventListener("submit", async function (event) {
 });
 
 
-// =========================================================
+
 // PAGE VISIBILITY
-// =========================================================
 
 // Login screen show karna.
 function showLoginPage() {
@@ -216,9 +212,7 @@ function showAppPage() {
 }
 
 
-// =========================================================
 // SIDEBAR NAVIGATION
-// =========================================================
 
 // Sidebar ke saare navigation buttons select kar rahe hain.
 const navItems = document.querySelectorAll(".nav-item");
@@ -297,10 +291,7 @@ function showSection(sectionName) {
     }
 }
 
-
-// =========================================================
 // PATIENTS
-// =========================================================
 
 // Backend se saare patients fetch karna.
 async function loadPatients() {
@@ -364,10 +355,7 @@ function renderPatients(patients) {
     }).join("");
 }
 
-
-// =========================================================
 // ADD PATIENT
-// =========================================================
 
 document.getElementById("showPatientFormBtn").addEventListener(
     "click",
@@ -440,10 +428,7 @@ patientForm.addEventListener("submit", async function (event) {
     }
 });
 
-
-// =========================================================
 // DOCTORS
-// =========================================================
 
 // Backend se doctors fetch karna.
 async function loadDoctors() {
@@ -508,9 +493,8 @@ function renderDoctors(doctors) {
 }
 
 
-// =========================================================
+
 // APPOINTMENTS
-// =========================================================
 
 // Backend se appointments fetch karna.
 async function loadAppointments() {
@@ -576,9 +560,7 @@ function renderAppointments(appointments) {
 }
 
 
-// =========================================================
 // DASHBOARD DATA
-// =========================================================
 
 // Dashboard par teen APIs ka data load karna.
 async function loadDashboardData() {
@@ -611,10 +593,7 @@ async function loadDashboardData() {
     }
 }
 
-
-// =========================================================
 // REFRESH BUTTONS
-// =========================================================
 
 document.getElementById("refreshDashboard").addEventListener(
     "click",
@@ -636,10 +615,7 @@ document.getElementById("refreshAppointments").addEventListener(
     loadAppointments
 );
 
-
-// =========================================================
 // LOGOUT
-// =========================================================
 
 document.getElementById("logoutBtn").addEventListener(
     "click",
@@ -647,9 +623,7 @@ document.getElementById("logoutBtn").addEventListener(
 );
 
 
-// =========================================================
 // SMALL UTILITY FUNCTIONS
-// =========================================================
 
 // API se aayi date ko thoda readable format mein show karna.
 function formatDate(dateString) {
@@ -682,9 +656,7 @@ function escapeHtml(value) {
 }
 
 
-// =========================================================
 // INITIAL APP START
-// =========================================================
 
 // Page load hote hi check karenge ki JWT already saved hai ya nahi.
 
