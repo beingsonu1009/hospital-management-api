@@ -89,9 +89,9 @@ class AppointmentResponse(AppointmentCreate):
         "from_attributes": True
     }
 
-    # =========================================================
+    # 
 # USER / AUTHENTICATION SCHEMAS
-# =========================================================
+# 
 
 class UserCreate(BaseModel):
     # User ka login username
