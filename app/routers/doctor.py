@@ -1,152 +1,388 @@
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
+# =========================================================
+# app/routers/doctor.py
+# Doctor CRUD + Working Hours + JWT Protection
+# =========================================================
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db.dependencies import get_db
 from app.models.doctor import Doctor
-from app.schema import DoctorCreate, DoctorResponse
-from fastapi import APIRouter, Depends, status, HTTPException
+from app.models.working_hr import DoctorWorkingHours
+from app.schema import (
+    DoctorCreate,
+    DoctorResponse,
+    WorkingHoursCreate,
+    WorkingHoursResponse,
+)
+from app.security import get_current_user
 
 
 router = APIRouter(
     prefix="/doctors",
-    tags=["Doctors"]
+    tags=["Doctors"],
+    # Doctor ke saare endpoints ke liye JWT required hai.
+    dependencies=[Depends(get_current_user)],
 )
+
+
+# =========================================================
+# GET ALL DOCTORS
+# =========================================================
+
+@router.get(
+    "",
+    response_model=list[DoctorResponse],
+)
+async def get_doctors(
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Doctor).order_by(Doctor.id)
+    )
+
+    return result.scalars().all()
+
+
+# =========================================================
+# GET DOCTOR BY ID
+# =========================================================
+
+@router.get(
+    "/{doctor_id}",
+    response_model=DoctorResponse,
+)
+async def get_doctor(
+    doctor_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Doctor).where(
+            Doctor.id == doctor_id
+        )
+    )
+
+    doctor = result.scalar_one_or_none()
+
+    if doctor is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor not found",
+        )
+
+    return doctor
+
+
+# =========================================================
+# CREATE DOCTOR
+# =========================================================
 
 @router.post(
     "",
     response_model=DoctorResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_doctor(
-    doctor: DoctorCreate,
-    db: AsyncSession = Depends(get_db)
+    doctor_data: DoctorCreate,
+    db: AsyncSession = Depends(get_db),
 ):
-    
     new_doctor = Doctor(
-    name=doctor.name,
-    specialisation=doctor.specialisation,
-    phone=doctor.phone,
-    status=doctor.status
-)
+        name=doctor_data.name,
+        specialisation=doctor_data.specialisation,
+        phone=doctor_data.phone,
+        status=doctor_data.status,
+    )
+
     db.add(new_doctor)
+
     await db.commit()
     await db.refresh(new_doctor)
+
     return new_doctor
 
-@router.get(
-    "",
-    response_model=list[DoctorResponse]
-)
-async def get_all_doctors(
-    db: AsyncSession = Depends(get_db)
-):
-        statement = select(Doctor)
 
-        result = await db.execute(statement)
-
-        doctors = result.scalars().all()
-
-        return doctors
-
-@router.get(
-    "/{doctor_id}",
-    response_model=DoctorResponse
-)
-async def get_doctor(
-    doctor_id: int,
-    db: AsyncSession = Depends(get_db)
-):
-    statement = select(Doctor).where(Doctor.id == doctor_id)
-
-    result = await db.execute(statement)
-
-    existing_doctor = result.scalar_one_or_none()
-
-    if existing_doctor is None:
-        raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Doctor Not Found"
-    )
-        return existing_doctor
-
+# =========================================================
+# UPDATE DOCTOR
+# =========================================================
 
 @router.put(
-    "/{doctor_id}",                  # URL: /doctors/2
-    response_model=DoctorResponse    # Response ko DoctorResponse ke format me validate karega
+    "/{doctor_id}",
+    response_model=DoctorResponse,
 )
 async def update_doctor(
-    doctor_id: int,                  # URL se doctor ki ID milegi
-    doctor: DoctorCreate,             # Request body se updated doctor data milega
-    db: AsyncSession = Depends(get_db) # FastAPI Dependency Injection se DB session milega
+    doctor_id: int,
+    doctor_data: DoctorCreate,
+    db: AsyncSession = Depends(get_db),
 ):
+    result = await db.execute(
+        select(Doctor).where(
+            Doctor.id == doctor_id
+        )
+    )
 
-    # Database me given ID wala doctor search karne ke liye query
-    statement = select(Doctor).where(Doctor.id == doctor_id)
+    doctor = result.scalar_one_or_none()
 
-    # Query ko database me execute karna
-    result = await db.execute(statement)
-
-    # Database result se ek Doctor object nikalna
-    # Doctor nahi mila to None milega
-    existing_doctor = result.scalar_one_or_none()
-
-    # Agar doctor database me exist nahi karta
-    if existing_doctor is None:
-
-        # Client ko 404 Not Found response dena
+    if doctor is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Doctor Not Found"
+            detail="Doctor not found",
         )
 
-    # Existing doctor ki values ko new values se update karna
-    existing_doctor.name = doctor.name
-    existing_doctor.specialisation = doctor.specialisation
-    existing_doctor.phone = doctor.phone
-    existing_doctor.status = doctor.status
+    doctor.name = doctor_data.name
+    doctor.specialisation = doctor_data.specialisation
+    doctor.phone = doctor_data.phone
+    doctor.status = doctor_data.status
 
-    # Changes ko PostgreSQL database me permanently save karna
     await db.commit()
+    await db.refresh(doctor)
 
-    # Database se latest values lekar object ko refresh karna
-    await db.refresh(existing_doctor)
+    return doctor
 
-    # Updated doctor ko response me return karna
-    return existing_doctor
+
+# =========================================================
+# DELETE DOCTOR
+# =========================================================
 
 @router.delete(
-    "/{doctor_id}",                       # URL: /doctors/2
-    status_code=status.HTTP_204_NO_CONTENT # Successful deletion → 204
+    "/{doctor_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_doctor(
-    doctor_id: int,                       # URL se doctor ki ID
-    db: AsyncSession = Depends(get_db)    # FastAPI DB session provide karega
+    doctor_id: int,
+    db: AsyncSession = Depends(get_db),
 ):
+    result = await db.execute(
+        select(Doctor).where(
+            Doctor.id == doctor_id
+        )
+    )
 
-    # Given ID wala doctor database me search karna
-    statement = select(Doctor).where(Doctor.id == doctor_id)
+    doctor = result.scalar_one_or_none()
 
-    # Query execute karna
-    result = await db.execute(statement)
-
-    # Result se Doctor object nikalna
-    # Doctor nahi mila → None
-    existing_doctor = result.scalar_one_or_none()
-
-    # Doctor exist nahi karta
-    if existing_doctor is None:
-
-        # 404 response dena
+    if doctor is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Doctor Not Found"
+            detail="Doctor not found",
         )
 
-    # Doctor object ko database session se delete ke liye mark karna
-    await db.delete(existing_doctor)
+    await db.delete(doctor)
 
-    # Delete operation ko PostgreSQL me permanently save karna
     await db.commit()
 
-    # 204 No Content me normally response body nahi hoti
-    return
+    return None
+
+
+# =========================================================
+# CREATE WORKING HOURS
+# =========================================================
+
+@router.post(
+    "/{doctor_id}/working-hours",
+    response_model=WorkingHoursResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_working_hours(
+    doctor_id: int,
+    working_hours_data: WorkingHoursCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    # Pehle verify karo ki doctor exist karta hai.
+    doctor_result = await db.execute(
+        select(Doctor).where(
+            Doctor.id == doctor_id
+        )
+    )
+
+    doctor = doctor_result.scalar_one_or_none()
+
+    if doctor is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor not found",
+        )
+
+    # Same doctor ke same day ke liye duplicate hours allowed nahi hain.
+    existing_result = await db.execute(
+        select(DoctorWorkingHours).where(
+            DoctorWorkingHours.doctor_id == doctor_id,
+            DoctorWorkingHours.day_of_week
+            == working_hours_data.day_of_week,
+        )
+    )
+
+    existing_hours = existing_result.scalar_one_or_none()
+
+    if existing_hours is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Working hours already exist for this day",
+        )
+
+    new_working_hours = DoctorWorkingHours(
+        doctor_id=doctor_id,
+        day_of_week=working_hours_data.day_of_week,
+        start_time=working_hours_data.start_time,
+        end_time=working_hours_data.end_time,
+    )
+
+    db.add(new_working_hours)
+
+    await db.commit()
+    await db.refresh(new_working_hours)
+
+    return new_working_hours
+
+
+# =========================================================
+# GET WORKING HOURS
+# =========================================================
+
+@router.get(
+    "/{doctor_id}/working-hours",
+    response_model=list[WorkingHoursResponse],
+)
+async def get_working_hours(
+    doctor_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    # Doctor exist karta hai ya nahi.
+    doctor_result = await db.execute(
+        select(Doctor).where(
+            Doctor.id == doctor_id
+        )
+    )
+
+    doctor = doctor_result.scalar_one_or_none()
+
+    if doctor is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor not found",
+        )
+
+    result = await db.execute(
+        select(DoctorWorkingHours)
+        .where(
+            DoctorWorkingHours.doctor_id == doctor_id
+        )
+        .order_by(
+            DoctorWorkingHours.day_of_week
+        )
+    )
+
+    return result.scalars().all()
+
+
+# =========================================================
+# UPDATE WORKING HOURS
+# =========================================================
+
+@router.put(
+    "/{doctor_id}/working-hours/{working_hours_id}",
+    response_model=WorkingHoursResponse,
+)
+async def update_working_hours(
+    doctor_id: int,
+    working_hours_id: int,
+    working_hours_data: WorkingHoursCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    # Doctor check.
+    doctor_result = await db.execute(
+        select(Doctor).where(
+            Doctor.id == doctor_id
+        )
+    )
+
+    doctor = doctor_result.scalar_one_or_none()
+
+    if doctor is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor not found",
+        )
+
+    # Working-hours record ko doctor ke saath verify karo.
+    result = await db.execute(
+        select(DoctorWorkingHours).where(
+            DoctorWorkingHours.id == working_hours_id,
+            DoctorWorkingHours.doctor_id == doctor_id,
+        )
+    )
+
+    working_hours = result.scalar_one_or_none()
+
+    if working_hours is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Working hours not found",
+        )
+
+    # Agar day change ho raha hai to duplicate check karo.
+    duplicate_result = await db.execute(
+        select(DoctorWorkingHours).where(
+            DoctorWorkingHours.doctor_id == doctor_id,
+            DoctorWorkingHours.day_of_week
+            == working_hours_data.day_of_week,
+            DoctorWorkingHours.id != working_hours_id,
+        )
+    )
+
+    duplicate = duplicate_result.scalar_one_or_none()
+
+    if duplicate is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Working hours already exist for this day",
+        )
+
+    working_hours.day_of_week = (
+        working_hours_data.day_of_week
+    )
+    working_hours.start_time = (
+        working_hours_data.start_time
+    )
+    working_hours.end_time = (
+        working_hours_data.end_time
+    )
+
+    await db.commit()
+    await db.refresh(working_hours)
+
+    return working_hours
+
+
+# =========================================================
+# DELETE WORKING HOURS
+# =========================================================
+
+@router.delete(
+    "/{doctor_id}/working-hours/{working_hours_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_working_hours(
+    doctor_id: int,
+    working_hours_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(DoctorWorkingHours).where(
+            DoctorWorkingHours.id == working_hours_id,
+            DoctorWorkingHours.doctor_id == doctor_id,
+        )
+    )
+
+    working_hours = result.scalar_one_or_none()
+
+    if working_hours is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Working hours not found",
+        )
+
+    await db.delete(working_hours)
+
+    await db.commit()
+
+    return None

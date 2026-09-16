@@ -1,135 +1,155 @@
-from datetime import datetime
-from typing import Literal
+# =========================================================
+# app/schema.py
+# Pydantic schemas
+# =========================================================
 
-from pydantic import BaseModel, Field
+from datetime import date, time
+
+from pydantic import BaseModel, Field, model_validator
 
 
-
+# =========================================================
 # PATIENT SCHEMAS
-
+# =========================================================
 
 class PatientCreate(BaseModel):
-    # Patient ka naam: minimum 3 aur maximum 50 characters
-    name: str = Field(..., min_length=3, max_length=50)
-
-    # Age 1 se 120 ke beech honi chahiye
-    age: int = Field(..., ge=1, le=120)
-
-    # Gender sirf in 3 values mein se ek ho sakta hai
-    gender: Literal["Male", "Female", "Other"]
-
-    # Disease minimum 3 characters ki honi chahiye
-    disease: str = Field(..., min_length=3)
+    name: str = Field(..., min_length=2, max_length=100)
+    age: int = Field(..., ge=0, le=120)
+    gender: str = Field(..., min_length=1, max_length=20)
+    disease: str = Field(..., min_length=1, max_length=255)
 
 
 class PatientResponse(PatientCreate):
-    # Database se generated patient ID
     id: int
 
-    # SQLAlchemy ORM object ko Pydantic response mein convert karne ke liye
     model_config = {
         "from_attributes": True
     }
 
 
-
+# =========================================================
 # DOCTOR SCHEMAS
-
+# =========================================================
 
 class DoctorCreate(BaseModel):
-    name: str
-    specialisation: str
-    phone: str
-
-    # Agar status nahi diya gaya to Active hoga
-    status: str = "Active"
+    name: str = Field(..., min_length=2, max_length=100)
+    specialisation: str = Field(..., min_length=2, max_length=100)
+    phone: str = Field(..., min_length=7, max_length=20)
+    status: str = Field(default="Active", max_length=100)
 
 
 class DoctorResponse(DoctorCreate):
-    # Database se generated doctor ID
     id: int
 
-    # SQLAlchemy ORM object se response create karne ke liye
     model_config = {
         "from_attributes": True
     }
 
 
+# =========================================================
+# DOCTOR WORKING HOURS SCHEMAS
+# =========================================================
 
-# APPOINTMENT SCHEMAS
+class WorkingHoursCreate(BaseModel):
+    # 1 = Monday ... 7 = Sunday
+    day_of_week: int = Field(..., ge=1, le=7)
+
+    start_time: time
+    end_time: time
+
+    @model_validator(mode="after")
+    def validate_working_hours(self):
+        # Start time hamesha end time se pehle hona chahiye.
+        if self.start_time >= self.end_time:
+            raise ValueError(
+                "start_time must be before end_time"
+            )
+
+        return self
 
 
-class AppointmentCreate(BaseModel):
-    # Kis patient ke saath appointment hai
-    patient_id: int
-
-    # Kis doctor ke saath appointment hai
+class WorkingHoursResponse(WorkingHoursCreate):
+    id: int
     doctor_id: int
 
-    # Appointment ki date aur time
-    appointment_date: datetime
+    model_config = {
+        "from_attributes": True
+    }
 
-    # Appointment ka reason
+
+# =========================================================
+# APPOINTMENT SCHEMAS
+# =========================================================
+
+class AppointmentCreate(BaseModel):
+    patient_id: int
+    doctor_id: int
+
+    appointment_date: date
+    start_time: time
+
+    # Duration minutes mein hogi.
+    duration: int = Field(..., gt=0)
+
     reason: str = Field(
         ...,
         min_length=3,
         max_length=255
     )
 
-    # Agar status nahi diya gaya to Scheduled hoga
     status: str = "Scheduled"
 
 
 class AppointmentResponse(AppointmentCreate):
-    # Database se generated appointment ID
     id: int
 
-    # SQLAlchemy ORM object ko Pydantic response mein convert karne ke liye
     model_config = {
         "from_attributes": True
     }
 
-    # 
-# USER / AUTHENTICATION SCHEMAS
-# 
+
+class AppointmentReschedule(BaseModel):
+    appointment_date: date
+    start_time: time
+    duration: int = Field(..., gt=0)
+
+
+# =========================================================
+# USER / AUTH SCHEMAS
+# =========================================================
 
 class UserCreate(BaseModel):
-    # User ka login username
     username: str = Field(
         ...,
         min_length=3,
         max_length=100
     )
 
-    # Plain password sirf request ke time receive hoga.
-    # Database mein ye password directly store nahi hoga.
     password: str = Field(
         ...,
-        min_length=8,
-        max_length=128
+        min_length=6,
+        max_length=100
     )
 
 
 class UserResponse(BaseModel):
-    # Database se generated user ID
     id: int
-
-    # User ka username
     username: str
 
-    # Account status
-    status: str
-
-    # SQLAlchemy ORM object ko Pydantic response mein
-    # convert karne ke liye
     model_config = {
         "from_attributes": True
     }
 
 
 class UserLogin(BaseModel):
-    # Login ke waqt username receive hoga
     username: str
-
-    # Login ke waqt password receive hoga
     password: str
+
+
+# =========================================================
+# TOKEN SCHEMA
+# =========================================================
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

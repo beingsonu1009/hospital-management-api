@@ -1,38 +1,28 @@
-from pwdlib import PasswordHash
+# =========================================================
+# app/security.py
+# Password hashing + JWT authentication
+# =========================================================
 
-
-# PasswordHash automatically manages secure password hashing
-# and password verification.
-password_hash = PasswordHash.recommended()
-
-
-def hash_password(password: str) -> str:
-    """
-    Convert a plain password into a secure password hash.
-    """
-    return password_hash.hash(password)
-
-
-def verify_password(password: str, hashed_password: str) -> bool:
-    """
-    Check whether the entered password matches the stored hash.
-    """
-    return password_hash.verify(password, hashed_password)
-
-from datetime import datetime, timedelta, timezone
 import os
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
-from jose import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from pwdlib import PasswordHash
 
+
+# =========================================================
+# ENVIRONMENT
+# =========================================================
 
 load_dotenv()
 
 
-
+# =========================================================
 # PASSWORD HASHING
-
+# =========================================================
 
 password_hash = PasswordHash.recommended()
 
@@ -44,51 +34,123 @@ def hash_password(password: str) -> str:
     return password_hash.hash(password)
 
 
-def verify_password(password: str, hashed_password: str) -> bool:
+def verify_password(
+    password: str,
+    hashed_password: str,
+) -> bool:
     """
     Entered password ko stored hash ke against verify karta hai.
     """
-    return password_hash.verify(password, hashed_password)
+    return password_hash.verify(
+        password,
+        hashed_password,
+    )
 
 
+# =========================================================
 # JWT CONFIGURATION
+# =========================================================
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 JWT_ALGORITHM = "HS256"
 
-# Access token kitne minutes valid rahega.
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-
-# JWT CREATION
-
+# =========================================================
+# JWT TOKEN CREATE
+# =========================================================
 
 def create_access_token(data: dict) -> str:
     """
-    JWT access token create karta hai.
+    User information ke basis par JWT token create karta hai.
     """
 
-    # Original data ko copy kar rahe hain taaki
-    # caller ka dictionary directly modify na ho.
+    # Original data ki copy banao.
     to_encode = data.copy()
 
-    # Token ki expiration time calculate kar rahe hain.
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    # Token expiry time calculate karo.
+    expire = (
+        datetime.now(timezone.utc)
+        + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     )
 
-    # JWT payload mein expiration claim add kar rahe hain.
-    to_encode.update({
-        "exp": expire
-    })
+    # JWT mein expiry add karo.
+    to_encode.update(
+        {
+            "exp": expire,
+        }
+    )
 
-    # JWT ko secret key + algorithm ke saath sign karte hain.
+    # JWT token generate karo.
     encoded_jwt = jwt.encode(
         to_encode,
         JWT_SECRET_KEY,
-        algorithm=JWT_ALGORITHM
+        algorithm=JWT_ALGORITHM,
     )
 
     return encoded_jwt
+
+
+# =========================================================
+# HTTP BEARER
+# =========================================================
+
+# Frontend request se:
+# Authorization: Bearer <token>
+# token read karne ke liye use hoga.
+bearer_scheme = HTTPBearer()
+
+
+# =========================================================
+# CURRENT USER
+# =========================================================
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(
+        bearer_scheme
+    ),
+):
+    """
+    JWT token ko verify karta hai.
+
+    Valid token:
+        request continue
+
+    Invalid / expired token:
+        401 Unauthorized
+    """
+
+    token = credentials.credentials
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired authentication token",
+        headers={
+            "WWW-Authenticate": "Bearer"
+        },
+    )
+
+    try:
+        # JWT decode + signature verification.
+        payload = jwt.decode(
+            token,
+            JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
+        )
+
+        # Login ke time humne user id 'sub' mein save ki thi.
+        user_id = payload.get("sub")
+
+        # Token mein sub nahi hai to token invalid hai.
+        if user_id is None:
+            raise credentials_exception
+
+        return user_id
+
+    except JWTError:
+        # Invalid signature / expired token / malformed token.
+        raise credentials_exception

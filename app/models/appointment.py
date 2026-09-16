@@ -1,45 +1,85 @@
-from datetime import datetime
+"""
+Appointment database model.
 
-from sqlalchemy import String, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+Is model mein patient aur doctor ke appointments store hote hain.
+"""
+
+from datetime import date, time
+
+from sqlalchemy import Date, ForeignKey, Integer, String, Time
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
 
 class Appointment(Base):
+    """
+    Appointment table ka SQLAlchemy model.
+    """
+
     __tablename__ = "appointment"
 
+    # Appointment ki unique ID
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
 
-    # Patient table ki id ko reference karega
+    # Patient ki ID
     patient_id: Mapped[int] = mapped_column(
-        ForeignKey("patient.id"),
+        ForeignKey(
+            "patient.id",
+            ondelete="CASCADE"
+        ),
         nullable=False
     )
 
-    # Doctor table ki id ko reference karega
+    # Doctor ki ID
     doctor_id: Mapped[int] = mapped_column(
-        ForeignKey("doctor.id"),
+        ForeignKey(
+            "doctor.id",
+            ondelete="CASCADE"
+        ),
         nullable=False
     )
 
-    # Appointment kab hai
-    appointment_date: Mapped[datetime] = mapped_column(
-        DateTime,
+    # Appointment ki date
+    appointment_date: Mapped[date] = mapped_column(
+        Date,
         nullable=False
     )
 
-    # Appointment kis reason ke liye hai
+    # Appointment ka starting time
+    start_time: Mapped[time] = mapped_column(
+        Time,
+        nullable=False
+    )
+
+    # Appointment duration minutes mein
+    duration: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    # Appointment ka reason
     reason: Mapped[str] = mapped_column(
         String(255),
         nullable=False
     )
 
-    # Example: Scheduled / Completed / Cancelled
+    # Appointment status
+    # Example: Scheduled / Cancelled
     status: Mapped[str] = mapped_column(
-        String(100),
+        String(30),
+        nullable=False,
         default="Scheduled"
     )
-    
+
+    # Patient relationship
+    patient: Mapped["Patient"] = relationship(
+        "Patient"
+    )
+
+    # Doctor relationship
+    doctor: Mapped["Doctor"] = relationship(
+        "Doctor"
+    )
