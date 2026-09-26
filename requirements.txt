@@ -1,0 +1,11 @@
+fastapi==0.140.0
+uvicorn==0.51.0
+sqlalchemy==2.0.48
+asyncpg==0.30.0
+pydantic==2.13.4
+python-dotenv==1.2.1
+python-jose==3.5.0
+argon2-cffi==25.1.0
+pwdlib==0.3.0
+pytest==8.4.2
+pytest-asyncio==1.2.0

@@ -1678,7 +1678,7 @@ async function loadAppointments() {
 
                         <td>
                             ${escapeHtml(
-                                appointment.duration_minutes
+                                appointment.duration
                             )} min
                         </td>
 
@@ -1705,7 +1705,7 @@ async function loadAppointments() {
                                         ${appointment.id},
                                         '${appointment.appointment_date}',
                                         '${appointment.start_time}',
-                                        ${appointment.duration_minutes}
+                                        ${appointment.duration}
                                     )"
                                 >
                                     Reschedule
@@ -1817,7 +1817,7 @@ if (appointmentForm) {
                 doctor_id: doctorId,
                 appointment_date: appointmentDate,
                 start_time: startTime,
-                duration_minutes: duration,
+                duration,
                 reason
             };
 
@@ -2052,7 +2052,7 @@ if (rescheduleForm) {
             const payload = {
                 appointment_date: newDate,
                 start_time: newStartTime,
-                duration_minutes: newDuration
+                duration: newDuration
             };
 
             try {
@@ -2065,7 +2065,7 @@ if (rescheduleForm) {
                 await apiRequest(
                     `/appointments/${appointmentId}/reschedule`,
                     {
-                        method: "PUT",
+                        method: "POST",
                         body: JSON.stringify(payload)
                     }
                 );

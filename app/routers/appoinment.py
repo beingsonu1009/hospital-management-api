@@ -106,6 +106,14 @@ async def validate_appointment_slot(
         duration,
     )
 
+    # Working hours are stored against a single calendar day, so a
+    # booking that ends after midnight cannot be validated safely.
+    if appointment_end.date() != appointment_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Appointment cannot cross midnight",
+        )
+
 
     # -----------------------------------------------------
     # 3. Doctor ke working hours find karo

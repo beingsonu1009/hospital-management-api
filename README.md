@@ -401,8 +401,8 @@ This helps serialize competing operations for the relevant scheduling resource a
 | GET    | `/appointments/{appointment_id}`            | Get one appointment    |
 | PUT    | `/appointments/{appointment_id}`            | Update appointment     |
 | DELETE | `/appointments/{appointment_id}`            | Delete appointment     |
-| PUT    | `/appointments/{appointment_id}/cancel`     | Cancel appointment     |
-| PUT    | `/appointments/{appointment_id}/reschedule` | Reschedule appointment |
+| POST   | `/appointments/{appointment_id}/cancel`     | Cancel appointment     |
+| POST   | `/appointments/{appointment_id}/reschedule` | Reschedule appointment |
 
 ---
 
@@ -424,18 +424,18 @@ The application uses the following day mapping:
 
 ## Environment Variables
 
-Create a `.env` file in the project root.
+Copy `.env.example` to `.env` in the project root and set values for your local PostgreSQL database and a private JWT secret.
 
 Example:
 
 ```env
-DATABASE_URL=your_postgresql_connection_string
-SECRET_KEY=your_secret_key
+DATABASE_URL=postgresql+asyncpg://postgres:your_password@127.0.0.1:5432/hospital_db
+JWT_SECRET_KEY=replace_with_a_long_random_secret
 ```
 
 Do **not** commit the real `.env` file to GitHub.
 
-Use `.env.example` for documenting required environment variables without exposing secrets.
+Generate a secret with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Keep `.env` private and do not commit it.
 
 ---
 
@@ -444,8 +444,8 @@ Use `.env.example` for documenting required environment variables without exposi
 ### 1. Clone the repository
 
 ```bash
-git clone <your-github-repository-url>
-cd hospital-api
+git clone https://github.com/beingsonu1009/hospital-management-api.git
+cd hospital-management-api
 ```
 
 ### 2. Create a virtual environment
@@ -462,27 +462,39 @@ Windows:
 .venv\Scripts\activate
 ```
 
-### 4. Install dependencies
+### 4. Configure environment variables
+
+Copy `.env.example` to `.env`, then set `DATABASE_URL` to a PostgreSQL database you can access and replace `JWT_SECRET_KEY` with a generated secret.
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+### 5. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Configure environment variables
-
-Create:
-
-```text
-.env
-```
-
-and add the required PostgreSQL database URL and application secret.
-
 ### 6. Start PostgreSQL
 
 Make sure PostgreSQL is running and the required database exists.
 
-### 7. Start FastAPI
+### 7. Create the database tables
+
+```bash
+python -m app.create_table
+```
+
+### 8. Start FastAPI
 
 ```bash
 uvicorn app.main:app --reload
@@ -541,24 +553,13 @@ JWT authentication is used when accessing protected endpoints.
 
 ## Testing
 
-The completed application has been manually tested for the following functionality:
+Install the project dependencies, then run the automated appointment-rule tests:
 
-* Patient CRUD
-* Doctor CRUD
-* Doctor Working Hours CRUD
-* Appointment CRUD
-* Appointment duration
-* Past appointment validation
-* Working-hours validation
-* Appointment overlap prevention
-* Appointment cancellation
-* Appointment rescheduling
-* Failed reschedule rollback
-* JWT login protection
-* Dashboard counts
-* Dashboard navigation
-* Frontend appointment scheduling
-* Frontend cancellation and rescheduling
+```bash
+python -m pytest
+```
+
+The tests cover overlapping and back-to-back bookings, working-hours validation, cancellation freeing a slot, failed rescheduling preserving the original booking, and appointments that cross midnight. They use a lightweight fake async database session and do not require PostgreSQL.
 
 ---
 
@@ -655,7 +656,7 @@ Possible future improvements include:
 
 * Role-based authorization
 * Admin/Doctor/Receptionist roles
-* Automated test suite with pytest
+* Broader automated API and database integration tests
 * Database migrations with Alembic
 * Pagination and filtering
 * Better frontend UX
@@ -674,6 +675,6 @@ Possible future improvements include:
 
 **Frontend development: Complete**
 
-**Final testing: Complete**
+**Automated appointment-rule tests: Available**
 
 The project is ready for GitHub preparation and deployment.
