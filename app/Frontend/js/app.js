@@ -1882,7 +1882,7 @@ async function cancelAppointment(appointmentId) {
         await apiRequest(
             `/appointments/${appointmentId}/cancel`,
             {
-                method: "PUT"
+                method: "POST"
             }
         );
 
