@@ -114,15 +114,15 @@ hospital-api/
 │   ├── models/
 │   │   ├── patient.py
 │   │   ├── doctor.py
-│   │   ├── appointment.py
-│   │   ├── working_hours.py
+│   │   ├── appoinment.py
+│   │   ├── working_hr.py
 │   │   └── user.py
 │   │
 │   ├── routers/
 │   │   ├── patient.py
 │   │   ├── doctor.py
-│   │   ├── appointment.py
-│   │   ├── working_hours.py
+│   │   ├── appoinment.py
+│   │   ├── wworking_hr.py
 │   │   └── auth.py
 │   │
 │   ├── schema.py
